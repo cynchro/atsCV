@@ -1,0 +1,12 @@
+services:
+  atscv:
+    build: .
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - temp_files:/app/temp_files
+    restart: unless-stopped
+
+volumes:
+  temp_files:

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATS CV Optimizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.4rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #16537e, #22a4d5);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f7fafc;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #718096;
+      margin-bottom: 2rem;
+      margin-top: 0.3rem;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #2d3748;
+      border-radius: 12px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #151a27;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #16537e;
+      background: #16537e18;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .drop-label {
+      font-size: 0.95rem;
+      color: #a0aec0;
+    }
+
+    .drop-label strong { color: #63b3ed; }
+
+    .drop-hint {
+      font-size: 0.8rem;
+      color: #4a5568;
+      margin-top: 0.4rem;
+    }
+
+    /* File selected state */
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: #16537e1a;
+      border: 1px solid #16537e55;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-top: 1rem;
+    }
+
+    .file-selected.visible { display: flex; }
+
+    .file-icon {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-size { font-size: 0.8rem; color: #718096; }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #718096;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .remove-btn:hover { color: #fc8181; }
+
+    /* Submit button */
+    .btn-optimize {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.9rem;
+      background: linear-gradient(135deg, #16537e, #22a4d5);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+    .btn-optimize:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .btn-optimize:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Progress */
+    .progress-wrap {
+      display: none;
+      margin-top: 1.2rem;
+    }
+    .progress-wrap.visible { display: block; }
+
+    .progress-bar-bg {
+      background: #2d3748;
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #16537e, #22a4d5);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-label {
+      font-size: 0.82rem;
+      color: #718096;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    /* Result */
+    .result-box {
+      display: none;
+      margin-top: 1.5rem;
+      background: #12231a;
+      border: 1px solid #276749;
+      border-radius: 12px;
+      padding: 1.3rem 1.5rem;
+    }
+    .result-box.visible { display: block; }
+
+    .result-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #68d391;
+      margin-bottom: 0.3rem;
+    }
+
+    .result-name {
+      font-size: 0.85rem;
+      color: #a0aec0;
+      margin-bottom: 1rem;
+    }
+
+    .download-btns {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-download {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-download:hover { opacity: 0.85; }
+    .btn-word { background: #2b4c7e; color: #bee3f8; }
+    .btn-pdf  { background: #742a2a; color: #fed7d7; }
+
+    /* Error */
+    .error-box {
+      display: none;
+      margin-top: 1.2rem;
+      background: #2d1515;
+      border: 1px solid #742a2a;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      font-size: 0.88rem;
+      color: #fc8181;
+    }
+    .error-box.visible { display: block; }
+
+    /* Tips */
+    .tips {
+      margin-top: 1.8rem;
+      border-top: 1px solid #2d3748;
+      padding-top: 1.2rem;
+    }
+    .tips-title { font-size: 0.78rem; color: #4a5568; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+    .tips-list { list-style: none; }
+    .tips-list li {
+      font-size: 0.82rem;
+      color: #718096;
+      padding: 0.2rem 0;
+      padding-left: 1.2rem;
+      position: relative;
+    }
+    .tips-list li::before { content: "✓"; position: absolute; left: 0; color: #48bb78; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">📄</div>
+    <h1>ATS CV Optimizer</h1>
+  </div>
+  <p class="subtitle">Subí tu CV en PDF y recibí una versión optimizada para pasar los filtros automáticos de cualquier empresa.</p>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".pdf" />
+    <span class="drop-icon">☁️</span>
+    <div class="drop-label"><strong>Hacé clic</strong> o arrastrá tu CV aquí</div>
+    <div class="drop-hint">Solo PDF · Máximo 15 MB</div>
+  </div>
+
+  <!-- File selected -->
+  <div class="file-selected" id="fileSelected">
+    <span class="file-icon">📋</span>
+    <div class="file-info">
+      <div class="file-name" id="fileName">-</div>
+      <div class="file-size" id="fileSize">-</div>
+    </div>
+    <button class="remove-btn" id="removeBtn" title="Quitar archivo">✕</button>
+  </div>
+
+  <!-- Optimize button -->
+  <button class="btn-optimize" id="optimizeBtn" disabled>
+    Optimizar para ATS →
+  </button>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">Procesando...</div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <div class="result-title">✅ CV Optimizado</div>
+    <div class="result-name" id="resultName"></div>
+    <div class="download-btns">
+      <a id="downloadWord" class="btn-download btn-word" href="#" download>📝 Word (.docx)</a>
+      <a id="downloadPdf"  class="btn-download btn-pdf"  href="#" download>📄 PDF</a>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <div class="tips-title">¿Qué hace el optimizador?</div>
+    <ul class="tips-list">
+      <li>Reescribe bullets con verbos de acción y métricas</li>
+      <li>Usa encabezados estándar que los ATS reconocen</li>
+      <li>Agrega keywords relevantes a tu industria</li>
+      <li>Elimina tablas, columnas y elementos gráficos</li>
+      <li>Unifica fechas al formato MM/YYYY</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const dropZone   = document.getElementById("dropZone");
+  const fileInput  = document.getElementById("fileInput");
+  const fileSelected = document.getElementById("fileSelected");
+  const fileName   = document.getElementById("fileName");
+  const fileSize   = document.getElementById("fileSize");
+  const removeBtn  = document.getElementById("removeBtn");
+  const optimizeBtn = document.getElementById("optimizeBtn");
+  const progressWrap = document.getElementById("progressWrap");
+  const progressBar  = document.getElementById("progressBar");
+  const progressLabel = document.getElementById("progressLabel");
+  const errorBox   = document.getElementById("errorBox");
+  const resultBox  = document.getElementById("resultBox");
+  const resultName = document.getElementById("resultName");
+  const downloadWord = document.getElementById("downloadWord");
+  const downloadPdf  = document.getElementById("downloadPdf");
+
+  let selectedFile = null;
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function setFile(file) {
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      showError("Solo se aceptan archivos PDF.");
+      return;
+    }
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    fileSelected.classList.add("visible");
+    optimizeBtn.disabled = false;
+    hideError();
+    resultBox.classList.remove("visible");
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = "";
+    fileSelected.classList.remove("visible");
+    optimizeBtn.disabled = true;
+    resultBox.classList.remove("visible");
+  }
+
+  function showError(msg) {
+    errorBox.textContent = "⚠️ " + msg;
+    errorBox.classList.add("visible");
+  }
+
+  function hideError() {
+    errorBox.classList.remove("visible");
+  }
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  removeBtn.addEventListener("click", clearFile);
+
+  // Fake progress animation while waiting for AI
+  let progressInterval = null;
+  function startProgress() {
+    progressWrap.classList.add("visible");
+    progressBar.style.width = "0%";
+    const steps = [
+      [800,  15, "Extrayendo texto del PDF..."],
+      [1800, 35, "Analizando estructura del CV..."],
+      [3000, 55, "Optimizando con IA para ATS..."],
+      [5000, 75, "Reescribiendo experiencia laboral..."],
+      [7000, 88, "Generando documentos..."],
+    ];
+    let i = 0;
+    progressInterval = setInterval(() => {
+      if (i < steps.length) {
+        const [, pct, label] = steps[i++];
+        progressBar.style.width = pct + "%";
+        progressLabel.textContent = label;
+      }
+    }, steps[i]?.[0] ?? 9999);
+  }
+
+  function stopProgress(success) {
+    clearInterval(progressInterval);
+    if (success) {
+      progressBar.style.width = "100%";
+      progressLabel.textContent = "¡Listo!";
+    }
+    setTimeout(() => progressWrap.classList.remove("visible"), 1200);
+  }
+
+  optimizeBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+
+    hideError();
+    resultBox.classList.remove("visible");
+    optimizeBtn.disabled = true;
+    startProgress();
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const res = await fetch("/optimize", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        stopProgress(false);
+        showError(data.detail || "Error desconocido.");
+        optimizeBtn.disabled = false;
+        return;
+      }
+
+      stopProgress(true);
+      resultName.textContent = data.name;
+      downloadWord.href = data.download_docx;
+      downloadPdf.href  = data.download_pdf;
+      resultBox.classList.add("visible");
+      optimizeBtn.disabled = false;
+
+    } catch (err) {
+      stopProgress(false);
+      showError("Error de red. Verificá que el servidor esté corriendo.");
+      optimizeBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
